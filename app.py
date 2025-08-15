@@ -12,8 +12,8 @@ class RemainderColsList(BaseEstimator, TransformerMixin):
     def fit(self, X, y=None): return self
     def transform(self, X): return X
 
-import __main__
-__main__.RemainderColsList = RemainderColsList
+import sklearn.compose._column_transformer
+sklearn.compose._column_transformer._RemainderColsList = RemainderColsList
 
 # --- Load model and metadata safely ---
 model = joblib.load("final_model_pipeline.joblib")
