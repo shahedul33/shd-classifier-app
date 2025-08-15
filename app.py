@@ -1,4 +1,4 @@
-# app.py — Gradio Web App for SHD Classifier
+# app.py — Gradio Web App for SHD Classifier (Render-ready)
 
 import gradio as gr
 import pandas as pd
@@ -8,12 +8,12 @@ from sklearn.base import BaseEstimator, TransformerMixin
 import os
 
 # --- Define and register custom class used in joblib ---
-class _RemainderColsList(BaseEstimator, TransformerMixin):
+class RemainderColsList(BaseEstimator, TransformerMixin):
     def fit(self, X, y=None): return self
     def transform(self, X): return X
 
-import sklearn.compose._column_transformer as ct
-ct._RemainderColsList = _RemainderColsList
+import __main__
+__main__.RemainderColsList = RemainderColsList
 
 # --- Load model and metadata safely ---
 model = joblib.load("final_model_pipeline.joblib")
@@ -22,14 +22,28 @@ metadata = joblib.load("metadata.joblib")
 numeric_features = metadata.get("numeric_features", [])
 categorical_features = metadata.get("categorical_features", [])
 
+def fill_missing_features(df):
+    # Derive 'rate_diff' if possible
+    if 'rate_diff' not in df.columns:
+        if 'ventricular_rate' in df.columns and 'atrial_rate' in df.columns:
+            df['rate_diff'] = df['ventricular_rate'] - df['atrial_rate']
+
+    # Fill other missing columns with default values or NaN
+    for col in numeric_features + categorical_features:
+        if col not in df.columns:
+            df[col] = np.nan
+    return df
+
 def predict_single(**inputs):
     df = pd.DataFrame([inputs])
+    df = fill_missing_features(df)
     pred = model.predict(df)[0]
     prob = model.predict_proba(df)[0][1]
     return f"{'SHD' if pred == 1 else 'No SHD'} (Prob: {prob:.2f})"
 
 def predict_batch(file):
     df = pd.read_csv(file.name)
+    df = fill_missing_features(df)
     preds = model.predict(df)
     probs = model.predict_proba(df)[:, 1]
     df['Prediction'] = preds
