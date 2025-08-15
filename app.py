@@ -59,4 +59,4 @@ batch_interface = gr.Interface(
 gr.TabbedInterface(
     [single_interface, batch_interface],
     ["Single Input", "Batch Prediction"]
-).launch()
+).launch(server_name="0.0.0.0", server_port=int(os.environ.get("PORT", 7860)))
